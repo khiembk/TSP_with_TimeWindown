@@ -1,5 +1,8 @@
 from typing import List, Tuple, Dict
 from abc import ABC, abstractmethod
+import random
+import time
+
 class Client:
     def __init__(self, id: int|str, time_window: Tuple[int, int, int]):
         self.id = id
@@ -155,6 +158,28 @@ def read_console() -> TSPTWProblem:
     
     problem = TSPTWProblem(clients=clients, start_at=clients[0])
     return problem
+
+def read_input_file(input_file: str) -> TSPTWProblem:
+    with open(input_file, 'r') as f:
+        lines = f.readlines()
+        
+    n = int(lines[0].strip())
+    clients: List[Client] = []
+    clients.append(Client(0, time_window=(0, MAX_TARDINESS, 0)))
+    
+    for i in range(1, n + 1):
+        parts = lines[i].strip().split()
+        e, l, d = map(int, parts[:3])
+        clients.append(Client(id=i, time_window=(e,l,d)))
+    
+    for i in range(n + 1):
+        row = list(map(int, lines[n + 1 + i].strip().split()))
+        for j in range(n + 1):
+            if i != j:
+                clients[i].add_travel_time(clients[j].id, row[j])
+    
+    problem = TSPTWProblem(clients=clients, start_at=clients[0])
+    return problem
             
     
 class Solver(ABC):
@@ -167,6 +192,12 @@ class Solver(ABC):
         self.best_violations = 1e8
         self.best_cost = 1e8
         self.best_penalty = 1e8
+        self.solve_time = 0
+        
+    
+    def _choose_opr(self, oprs: List['Operator']):
+        weights = [opr.prob for opr in oprs]
+        return random.choices(oprs, weights=weights, k=1)[0]
         
     def _print_with_debug(self, msg: str, debug: bool=False):
         if debug:
@@ -198,9 +229,121 @@ class Solver(ABC):
         self.best_cost = new_cost
         
         return reward
+    
+    def update_sol_time(self, start: float):
+        self.solve_time = time.time() - start
         
         
     @abstractmethod
     def solve(self, debug: bool=False, **kwargs) -> Status:
         pass
     
+class Operator(ABC):
+    def __init__(self, prob: float, problem: TSPTWProblem|None = None, score: float=0.0):
+        self.prob = prob
+        self.problem = problem
+        self.score = score
+        
+class InitOperator(Operator):
+    
+    @abstractmethod
+    def init(self) -> PermuSolution:
+        pass
+    
+class RandomInitOperator(InitOperator):
+    def init(self):
+        remains = [client for client in self.problem.clients if not client == self.problem.start]
+        random.shuffle(remains)
+        print(remains)
+        
+        init_sol = PermuSolution(len(remains) + 2)
+        init_sol.route = [self.problem.start] + remains + [self.problem.start]
+        return init_sol
+class HNNInitOperator(InitOperator):
+    
+    def init(self):
+        route: List[Client] = []
+        curr = self.problem.start
+        route.append(curr)
+        remains = [client for client in self.problem.clients if not client == self.problem.start]
+        curr_time = curr.earliness
+        
+        while remains:
+            feasible = []
+            infeasible = []
+            
+            for nxt in remains:
+                travel_time = curr.travel_times[nxt.id]
+                arr_time = curr_time + travel_time
+                
+                penalty = 0
+                if arr_time < nxt.earliness:
+                    penalty = nxt.earliness - arr_time
+                elif arr_time > nxt.tardiness:
+                    penalty = 3 * (arr_time - nxt.tardiness)
+                    
+                if penalty == 0:
+                    feasible.append((nxt, travel_time))
+                else:
+                    infeasible.append((nxt, penalty))
+            
+            if feasible:
+                nxt = min(feasible, key=lambda x: x[1])[0]
+            else:
+                nxt = min(infeasible, key=lambda x: x[1])[0]
+                
+            route.append(nxt)
+            
+            travel_time = curr.travel_times[nxt.id]
+            arr_time = curr_time + travel_time
+            arr_time = max(arr_time, nxt.earliness)
+            curr_time = arr_time + nxt.service_time
+            curr = nxt
+            remains.remove(curr)
+            
+        route.append(self.problem.start)
+        sol = PermuSolution(size=len(route))
+        sol.route = route
+        return sol
+    
+class HybridInitOperator(InitOperator):
+    def __init__(self, prob=1.0, problem=None, hn_ratio=0.2):
+        super().__init__(prob, problem)
+        self.hn_ratio = hn_ratio  # tỉ lệ áp dụng HNN
+    
+    def init(self):
+        clients = [c for c in self.problem.clients if c != self.problem.start]
+        random.shuffle(clients)
+        num_hnn = int(len(clients) * self.hn_ratio)
+        
+        route = [self.problem.start]
+        curr = self.problem.start
+        curr_time = curr.earliness
+        hnn_part = []
+        remains = clients.copy()
+
+        # Áp dụng HNN cho 20% đầu
+        for _ in range(min(num_hnn, len(remains))):
+            best = None
+            best_eval = float('inf')
+            for nxt in remains:
+                t = curr.travel_times[nxt.id]
+                arr_time = curr_time + t
+                penalty = max(0, nxt.earliness - arr_time) + 3 * max(0, arr_time - nxt.tardiness)
+                if penalty < best_eval:
+                    best_eval = penalty
+                    best = nxt
+            if best:
+                hnn_part.append(best)
+                curr_time += curr.travel_times[best.id]
+                curr_time = max(curr_time, best.earliness)
+                curr_time += best.service_time
+                curr = best
+                remains.remove(best)
+        
+        # Random phần còn lại
+        random.shuffle(remains)
+        full_route = route + hnn_part + remains + [self.problem.start]
+        sol = PermuSolution(size=len(full_route))
+        sol.route = full_route
+        return sol

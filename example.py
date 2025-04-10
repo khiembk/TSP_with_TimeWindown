@@ -1,12 +1,13 @@
-from common import read_console, TimeWindowConstraint, MustFollowConstraint, PermuSolution, Solver
+from common import read_console, TimeWindowConstraint, MustFollowConstraint, PermuSolution, Solver, read_input_file
 import alns
+from common import HNNInitOperator, HybridInitOperator
 
-problem = read_console()
+problem = read_input_file('tests/test6/input.in')
 
 problem.add_constraint(TimeWindowConstraint())
-problem.add_constraint(MustFollowConstraint())
+# problem.add_constraint(MustFollowConstraint())
 
-init_hnn = alns.HNNInitOperator(prob=1, problem=problem)
+init_hnn = HybridInitOperator(prob=1, problem=problem, hn_ratio=0.12)
 
 remove_random = alns.RandomRemoveOperator(prob=0.3, problem=problem)
 remove_worst = alns.WorstRemoveOperator(prob=0.1, problem=problem)
@@ -27,7 +28,7 @@ solver.add_insert_opr(insert_greedy)
 solver.add_insert_opr(insert_regret)
 import random
 random.seed(42)
-status = solver.solve(debug=True, num_iters=4, remove_fraction=0.2,
+status = solver.solve(debug=True, num_iters=30, remove_fraction=0.2,
                       insert_idx_selected=30, update_weight_freq=0.2)
 
 print(status)

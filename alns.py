@@ -1,14 +1,9 @@
-from common import Solver, TSPTWProblem, PermuSolution, Client
+from common import Solver, TSPTWProblem, PermuSolution, Client, Operator, InitOperator
 from typing import Callable, List, Tuple, Dict, Literal
 from abc import ABC, abstractmethod
 import random
 import copy
-
-class Operator(ABC):
-    def __init__(self, prob: float, problem: TSPTWProblem|None = None, score: float=0.0):
-        self.prob = prob
-        self.problem = problem
-        self.score = score
+import time
 
 class RemoveOperator(Operator):
         
@@ -22,59 +17,6 @@ class InsertOperator(Operator):
     def insert(self, partial_solution: PermuSolution, removed_solution: PermuSolution,
                insert_idx_selected: int|Literal['all']) -> PermuSolution:
         pass
-    
-class InitOperator(Operator):
-    
-    @abstractmethod
-    def init(self) -> PermuSolution:
-        pass
-    
-class HNNInitOperator(InitOperator):
-    
-    def init(self):
-        route: List[Client] = []
-        curr = self.problem.start
-        route.append(curr)
-        remains = [client for client in self.problem.clients if not client == self.problem.start]
-        curr_time = curr.earliness
-        
-        while remains:
-            feasible = []
-            infeasible = []
-            
-            for nxt in remains:
-                travel_time = curr.travel_times[nxt.id]
-                arr_time = curr_time + travel_time
-                
-                penalty = 0
-                if arr_time < nxt.earliness:
-                    penalty = nxt.earliness - arr_time
-                elif arr_time > nxt.tardiness:
-                    penalty = 3 * (arr_time - nxt.tardiness)
-                    
-                if penalty == 0:
-                    feasible.append((nxt, travel_time))
-                else:
-                    infeasible.append((nxt, penalty))
-            
-            if feasible:
-                nxt = min(feasible, key=lambda x: x[1])[0]
-            else:
-                nxt = min(infeasible, key=lambda x: x[1])[0]
-                
-            route.append(nxt)
-            
-            travel_time = curr.travel_times[nxt.id]
-            arr_time = curr_time + travel_time
-            arr_time = max(arr_time, nxt.earliness)
-            curr_time = arr_time + nxt.service_time
-            curr = nxt
-            remains.remove(curr)
-            
-        route.append(self.problem.start)
-        sol = PermuSolution(size=len(route))
-        sol.route = route
-        return sol
     
 class RandomRemoveOperator(RemoveOperator):
     def remove(self, solution, remove_cnt):
@@ -163,7 +105,7 @@ class GreedyInsertOperator(InsertOperator):
             
             insert_ids = [i for i in range(1, len(route))]
             if insert_idx_selected != 'all':
-                insert_ids = random.sample(insert_ids, k=min(insert_idx_selected, len(route)))
+                insert_ids = random.sample(insert_ids, k=min(insert_idx_selected, len(route)-2))
             
             for i in insert_ids:
                 new_route = route[:i] + [unorder_client] + route[i:]
@@ -202,7 +144,7 @@ class RegretInsertOperator(InsertOperator):
                 options = []
                 insert_ids = [i for i in range(1, len(route))]
                 if insert_idx_selected != 'all':
-                    insert_ids = random.sample(insert_ids, k=min(insert_idx_selected, len(route)))
+                    insert_ids = random.sample(insert_ids, k=min(insert_idx_selected, len(route)-2))
                 
                 for i in insert_ids:
                     new_route = route[:i] + [client] + route[i:]
@@ -304,10 +246,6 @@ class ALNSSolver(Solver):
     
     def add_insert_opr(self, insert_opr: InsertOperator):
         self.insert_oprs.append(insert_opr)
-        
-    def _choose_opr(self, oprs: List[Operator]):
-        weights = [opr.prob for opr in oprs]
-        return random.choices(oprs, weights=weights, k=1)[0]
     
     def update_weight(self, oprs: List[Operator]):
         total_scores = sum(opr.score for opr in oprs)
@@ -321,6 +259,7 @@ class ALNSSolver(Solver):
               remove_fraction: float = 0.2,
               insert_idx_selected: int|Literal['all'] = 'all',
               update_weight_freq: float = 0.1):
+        start = time.time()
         init_sol = self.init_opr.init()
         self.update_best(init_sol)
         
@@ -330,16 +269,12 @@ class ALNSSolver(Solver):
         
         for iter in range(1, num_iters+1):
             # Remove phase
-            print(self.best_solution)
             remove_opr: RemoveOperator = self._choose_opr(self.remove_oprs)
             remove_cnt = int(max(1, remove_fraction * len(self.problem.clients)))
             partial_sol, remove_sol = remove_opr.remove(self.best_solution, remove_cnt)
-            print(remove_opr)
-            print(partial_sol, remove_sol)
             # Insert phase
             insert_opr: InsertOperator = self._choose_opr(self.insert_oprs)
             new_sol = insert_opr.insert(partial_sol, remove_sol, insert_idx_selected)
-            print(new_sol)
             # Update cost & violation
             reward = self.update_best(new_sol)
             
@@ -353,5 +288,7 @@ class ALNSSolver(Solver):
             self._print_with_debug(f'Iter {iter}: Best vio: {self.best_violations}, Best penalty: {self.best_penalty}, Best cost: {self.best_cost}', debug)
         
         if self.best_violations != 0:
+            self.update_sol_time(start)
             return Solver.Status.INFEASIBLE
+        self.update_sol_time(start)
         return Solver.Status.FEASIBLE
