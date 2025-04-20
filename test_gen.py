@@ -34,7 +34,7 @@ def generate_time_windows(arrivals, wide=True, slack_wide=1000, slack_narrow=5):
     tw = []
     for arr in arrivals:
         if wide:
-            e, l = 0, arr + slack_wide
+            e, l = max(0, arr-2*slack_wide), arr + slack_wide
         else:
             slack = random.randint(0, slack_narrow)
             e = max(0, arr - slack)
@@ -80,12 +80,12 @@ def main():
     specs = [
         (20,  True),  # 1. N≤10, TW rộng
         (50,  True),  # 2. N≤50, TW rộng
-        (10,  False), # 3. N≤10, TW hẹp
+        (20,  False), # 3. N≤10, TW hẹp
         (50,  False), # 4. N≤50, TW hẹp
-        (200, True),  # 5. N≤200, TW rộng
-        (300, False), # 6. N≤200, TW hẹp
-        (5000,True),  # 7. N≤5000, TW rộng
-        (2000,False), # 8. N≤5000, TW hẹp
+        (250, True),  # 5. N≤200, TW rộng
+        (250, False), # 6. N≤200, TW hẹp
+        (1000,True),  # 7. N≤5000, TW rộng
+        (1000,False), # 8. N≤5000, TW hẹp
     ]
 
     # Tạo thư mục chứa test nếu chưa có
@@ -268,22 +268,22 @@ def generate_delay_trap(n, slack_narrow=2):
 def gen_trap_test():
     # Example: write these to files
     os.makedirs("tests/trap", exist_ok=True)
-    content = generate_cluster_trap(20, 20, inter_dist=500)
-    with open("tests/trap/cluster_trap.in", "w") as f:
+    content = generate_cluster_trap(100, 100, inter_dist=600)
+    with open("tests/test9/input.in", "w") as f:
         f.write(content[0])
-    with open("tests/trap/cluster_trap.out", "w") as f:
+    with open("tests/test9/output.out", "w") as f:
         f.write(content[1])
         
-    content = generate_greedy_trap(40)
-    with open("tests/trap/greedy_trap.in", "w") as f:
+    content = generate_greedy_trap(150)
+    with open("tests/test10/input.in", "w") as f:
         f.write(content[0])
-    with open("tests/trap/greedy_trap.out", "w") as f:
+    with open("tests/test10/output.out", "w") as f:
         f.write(content[1])
         
-    content = generate_delay_trap(40)
-    with open("tests/trap/delay_trap.in", "w") as f:
+    content = generate_delay_trap(200)
+    with open("tests/test11/input.in", "w") as f:
         f.write(content[0])
-    with open("tests/trap/delay_trap.in", "w") as f:
+    with open("tests/test11/output.out", "w") as f:
         f.write(content[1])
 
     print("Generated cluster_trap.in, greedy_trap.in, delay_trap.in")
