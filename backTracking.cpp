@@ -11,7 +11,7 @@ int solution[1000];
 int min_cost = __INT_MAX__;
 int min_d = __INT_MAX__;
 bool CheckIfValid(int cur_node, int cur_time, int last_node){
-    if (!Visited[cur_node] && cur_time + cost[last_node][cur_node] + d[cur_node] <= l[cur_node] && cur_time +cost[last_node][cur_node]+ d[cur_node] >= e[cur_node]){
+    if (!Visited[cur_node] && cur_time + cost[last_node][cur_node] + d[cur_node] <= l[cur_node]){
         return true;
     }
     return false;
@@ -21,7 +21,14 @@ void backTrack(int cur_step){
 
     for(int i = 1; i <=n ; i++){
         if (CheckIfValid(i,cur_time,last_node)){
+            int old_curtime = cur_time;
+            if (cur_time + cost[last_node][i] + d[i] < e[i]){
+                    cur_time = e[i];   
+            }
+            else{
             cur_time += cost[last_node][i] + d[i];
+            }
+
             Visited[i] = true;
             path[cur_step] = i;
             if(cur_step == n){
@@ -36,7 +43,7 @@ void backTrack(int cur_step){
                     backTrack(cur_step + 1);
                 }
             }
-            cur_time -= (cost[last_node][i] + d[i]);
+            cur_time  = old_curtime;
             Visited[i] = false;
             path[cur_step] = 0;
         }
