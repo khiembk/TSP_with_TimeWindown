@@ -146,13 +146,35 @@ def order_crossover(parent1, parent2):
             idx += 1
     return child
 
-def mutate(chromosome, mutation_rate=0.01):
-    if random.random() < mutation_rate:
-        i, j = random.sample(range(len(chromosome)), 2)
-        chromosome[i], chromosome[j] = chromosome[j], chromosome[i]
-    return chromosome
+def mutate(chromosome, n, time_arrivals, times, cur_ep, total_ep, delta = 20,mutation_rate=0.01, max_time=10):
+    if random.random() >= mutation_rate:
+        return chromosome
+    
+    # Compute original penalty
+    old_penalty = compute_penalty(n, time_arrivals, times, chromosome)
+    original_chromosome = chromosome.copy()  # Store original for reversion
+    attempts = 0
+    
+    while attempts < max_time:
+        # Create a copy for mutation
+        new_chromosome = chromosome.copy()
+        # Perform swap mutation
+        i, j = random.sample(range(len(new_chromosome)), 2)
+        new_chromosome[i], new_chromosome[j] = new_chromosome[j], new_chromosome[i]
+        
+        # Compute new penalty
+        new_penalty = compute_penalty(n, time_arrivals, times, new_chromosome)
+        
+        # Accept if new penalty is less than or equal to old penalty
+        if new_penalty <= old_penalty + delta*(cur_ep/total_ep):
+            return new_chromosome
+        
+        attempts += 1
+    
+    # Return original chromosome if no valid mutation is found
+    return original_chromosome
 
-def genetic_algorithm(n, time_arrivals, times, max_time, pop_size=100, total_ep=1000, mutation_rate=0.01):
+def genetic_algorithm(n, time_arrivals, times, max_time, pop_size=170, total_ep=1000, mutation_rate=0.01):
     population = generate_population(n, pop_size)
     best_solution = None
     best_fitness = float('inf')
@@ -172,7 +194,7 @@ def genetic_algorithm(n, time_arrivals, times, max_time, pop_size=100, total_ep=
             parent1 = tournament_selection(population, fitnesses)
             parent2 = tournament_selection(population, fitnesses)
             child = order_crossover(parent1, parent2)
-            child = mutate(child, mutation_rate)
+            child = mutate(child,n, time_arrivals, times, ep, total_ep, mutation_rate=mutation_rate)
             new_population.append(child)
         
         population = new_population
@@ -183,4 +205,5 @@ if __name__ == "__main__":
     n, time_arrivals, times, max_time = read_input()
     best_route = genetic_algorithm(n, time_arrivals, times, max_time)
     print(n)
+    print("solution value",  compute_cost(n, time_arrivals, times, best_route))
     print(*best_route)
