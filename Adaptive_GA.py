@@ -1,4 +1,5 @@
 import random
+from copy import deepcopy
 
 def read_input():
     n = int(input())
@@ -35,6 +36,22 @@ def compute_cost(n, time_arrivals, times, chromosome):
     
     cost += times[current][0]
     return cost
+
+def select_population(n, time_arrivals, times, cur_ep, total_ep, population, new_population, pop_size, reserve_pop_size):
+    # Combine population and new_population
+    combined = [(deepcopy(chrom), compute_fitness(n, time_arrivals, times, chrom, cur_ep, total_ep)) 
+                for chrom in population + new_population]
+    
+    # Sort by fitness (ascending, lower is better)
+    combined.sort(key=lambda x: x[1])
+    
+    # Select top pop_size for new population
+    new_population = [chrom for chrom, _ in combined[:pop_size]]
+    
+    # Select next reserve_pop_size for reserve set
+    reserve_pop = combined[pop_size:pop_size + reserve_pop_size]
+    
+    return new_population, reserve_pop
 
 def compute_penalty(n, time_arrivals, times, chromosome):
     if len(chromosome) != n or not all(1 <= x <= n for x in chromosome) or len(set(chromosome)) != n:
@@ -173,6 +190,7 @@ def mutate(chromosome, n, time_arrivals, times, cur_ep, total_ep, delta = 20,mut
     
     # Return original chromosome if no valid mutation is found
     return original_chromosome
+
 
 def genetic_algorithm(n, time_arrivals, times, max_time, pop_size=170, total_ep=1000, mutation_rate=0.01):
     population = generate_population(n, pop_size)
