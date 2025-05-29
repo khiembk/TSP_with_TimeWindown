@@ -77,6 +77,62 @@ def tournament_selection(population, fitnesses, tournament_size=3):
     selected = random.sample(list(zip(population, fitnesses)), tournament_size)
     return min(selected, key=lambda x: x[1])[0]
 
+def pmx_crossover(parent1, parent2):
+    n = len(parent1)
+    # Select two random crossover points
+    start, end = sorted(random.sample(range(n), 2))
+    
+    # Initialize child
+    child = [-1] * n
+    
+    # Copy segment from parent1 to child
+    child[start:end+1] = parent1[start:end+1]
+    
+    # Create mapping from parent1 to parent2 for the swapped segment
+    mapping = {parent1[i]: parent2[i] for i in range(start, end+1)}
+    reverse_mapping = {parent2[i]: parent1[i] for i in range(start, end+1)}
+    
+    # Fill remaining positions
+    for i in range(n):
+        if i < start or i > end:
+            gene = parent2[i]
+            # Resolve conflicts by following the mapping
+            while gene in child:
+                gene = mapping.get(gene, gene)
+                if gene in child:  # If still in child, use reverse mapping
+                    gene = reverse_mapping.get(gene, gene)
+            child[i] = gene
+    
+    return child
+
+def cycle_crossover(parent1, parent2):
+    n = len(parent1)
+    child = [-1] * n
+    visited = [False] * n
+    
+    # Start cycle from position 0
+    pos = 0
+    cycle = []
+    
+    # Find the first cycle
+    while not visited[pos]:
+        cycle.append(pos)
+        visited[pos] = True
+        # Find the position of parent1[pos] in parent2
+        gene = parent1[pos]
+        pos = parent2.index(gene)
+    
+    # Copy genes from parent1 for the cycle
+    for i in cycle:
+        child[i] = parent1[i]
+    
+    # Fill remaining positions from parent2
+    for i in range(n):
+        if child[i] == -1:
+            child[i] = parent2[i]
+    
+    return child
+
 def order_crossover(parent1, parent2):
     n = len(parent1)
     start, end = sorted(random.sample(range(n), 2))
