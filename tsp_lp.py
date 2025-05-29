@@ -49,6 +49,7 @@ def solve_tsp_lp(n, time_arrivals, times, max_time, time_deleve):
     
     status = solver.Solve()
     if status == pywraplp.Solver.OPTIMAL:
+        print("Cost: ", int(Totalcost.solution_value()))
         path = []
         current = 0
         visited = set()
