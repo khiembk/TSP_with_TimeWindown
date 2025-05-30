@@ -118,24 +118,38 @@ def order_crossover(parent1, parent2):
 
 def pmx_crossover(parent1, parent2):
     n = len(parent1)
+    # Validate parents
     if len(parent2) != n or len(set(parent1)) != n or len(set(parent2)) != n:
         raise ValueError(f"Invalid parents: parent1={parent1}, parent2={parent2}")
     
+    # Select crossover points and initialize child
     start, end = sorted(random.sample(range(n), 2))
     child = [-1] * n
     child[start:end+1] = parent1[start:end+1]
-    mapping = {parent1[i]: parent2[i] for i in range(start, end+1)}
-    reverse_mapping = {parent2[i]: parent1[i] for i in range(start, end+1)}
     
+    # Track used genes
+    used = set(child[start:end+1])
+    
+    # Create mapping from parent1 to parent2 in the segment
+    mapping = {parent1[i]: parent2[i] for i in range(start, end+1)}
+    
+    # Fill positions outside the segment
     for i in range(n):
         if i < start or i > end:
             gene = parent2[i]
-            while gene in child:
+            # Resolve conflicts using mapping
+            visited = set()
+            while gene in used and gene not in visited:
+                visited.add(gene)
                 gene = mapping.get(gene, gene)
-                if gene in child:
-                    gene = reverse_mapping.get(gene, gene)
+            # If gene is still used, pick an unused gene
+            if gene in used:
+                available = set(range(1, n+1)) - used
+                gene = available.pop()
             child[i] = gene
+            used.add(gene)
     
+    # Validate child
     if len(set(child)) != n or any(x < 1 or x > n for x in child):
         raise ValueError(f"Invalid child generated: {child}")
     return child
@@ -200,7 +214,7 @@ def genetic_algorithm(n, time_arrivals, times, max_time, pop_size=150, reserve_p
     population = generate_population(n, pop_size)
     reserve_pop = [(chrom, compute_fitness(n, time_arrivals, times, chrom, 0, total_ep)) 
                    for chrom in generate_population(n, reserve_pop_size)]
-    crossover_methods = order_crossover
+    crossover_methods = cycle_crossover
     best_solution = None
     best_fitness = float('inf')
     
