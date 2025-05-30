@@ -1,6 +1,6 @@
 import random
 from copy import deepcopy
-
+import time
 def read_input():
     try:
         n = int(input())
@@ -210,22 +210,44 @@ def select_population(n, time_arrivals, times, cur_ep, total_ep, population, new
     
     return new_population, reserve_pop
 
-def genetic_algorithm(n, time_arrivals, times, max_time, pop_size=150, reserve_pop_size=30, total_ep=800, mutation_rate=0.01, p_reserve=0.1, random_chrom_prob=0.1):
+def random_index_method(crossover_score):
+    total = sum(crossover_score)
+    p_order = crossover_score[0]/total
+    p_cycle = crossover_score[1]/total
+
+    p = random.random()
+    if p<= p_order:
+        return 0
+    if p_order <p and p<= p_order + p_cycle:
+        return 1
+    else:
+        return 2
+    
+def genetic_algorithm(n, time_arrivals, times, max_time, pop_size=170, reserve_pop_size=30, total_ep=1000, mutation_rate=0.01, p_reserve=0.1, random_chrom_prob=0.1):
     population = generate_population(n, pop_size)
     reserve_pop = [(chrom, compute_fitness(n, time_arrivals, times, chrom, 0, total_ep)) 
                    for chrom in generate_population(n, reserve_pop_size)]
-    crossover_methods = cycle_crossover
+    crossover_methods = [order_crossover, cycle_crossover, pmx_crossover]
     best_solution = None
     best_fitness = float('inf')
-    
+
+    crossover_score = [1]*3
+    method_indx = 0
+
     for ep in range(total_ep):
         fitnesses = [compute_fitness(n, time_arrivals, times, chrom, ep, total_ep) for chrom in population]
         
         min_fitness = min(fitnesses)
         if min_fitness < best_fitness:
+            if best_fitness!= float('inf'):
+                add_score = (best_fitness - min_fitness)/best_fitness
+                crossover_score[method_indx] += add_score
+
             best_fitness = min_fitness
             best_solution = population[fitnesses.index(min_fitness)].copy()
-        
+            
+        method_indx = random_index_method(crossover_score)
+        crossover = crossover_methods[method_indx]
         new_population = []
         for _ in range(pop_size):
             try:
@@ -238,7 +260,7 @@ def genetic_algorithm(n, time_arrivals, times, max_time, pop_size=150, reserve_p
                     parent2 = tournament_selection(population, fitnesses)
                 
                 #crossover = random.choice(crossover_methods)
-                crossover = crossover_methods
+                
                 child = crossover(parent1, parent2)
                 child = mutate(child, n, time_arrivals, times, ep, total_ep, mutation_rate=mutation_rate)
                 new_population.append(child)
@@ -248,15 +270,19 @@ def genetic_algorithm(n, time_arrivals, times, max_time, pop_size=150, reserve_p
         
         population, reserve_pop = select_population(n, time_arrivals, times, ep, total_ep, population, new_population, pop_size, reserve_pop_size)
     
+    print("score each crossover methods: ", crossover_score)
     return best_solution
 
 if __name__ == "__main__":
     try:
         n, time_arrivals, times, max_time = read_input()
+        start_time = time.time()
         best_route = genetic_algorithm(n, time_arrivals, times, max_time)
+        end_time = time.time()
         print(n)
         cost = compute_cost(n, time_arrivals, times, best_route)
         print("solution value", cost if cost != float('inf') else "Invalid solution")
         print(*best_route)
+        print(f"Execution time: {end_time - start_time:.4f} seconds")
     except ValueError as e:
         print(f"Error: {str(e)}")
