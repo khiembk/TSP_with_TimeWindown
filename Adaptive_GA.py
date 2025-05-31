@@ -126,7 +126,7 @@ def generate_random_chromosome(n):
     chromosome = list(range(1, n+1))
     random.shuffle(chromosome)
     if len(chromosome) != n or len(set(chromosome)) != n or not all(1 <= x <= n for x in chromosome):
-        raise ValueError(f"Invalid chromosome generated: {chromosome}")
+        raise ValueError(f"Invalid chromosome generated: {len(chromosome)}")
     return chromosome
 
 def tournament_selection(population, fitnesses, tournament_size=15):
@@ -138,7 +138,7 @@ def tournament_selection(population, fitnesses, tournament_size=15):
 def order_crossover(parent1, parent2):
     n = len(parent1)
     if len(parent2) != n or len(set(parent1)) != n or len(set(parent2)) != n:
-        raise ValueError(f"Invalid parents: parent1={parent1}, parent2={parent2}")
+        raise ValueError(f"Invalid parents: parent1={len(parent1)}, parent2={len(parent2)}")
     
     start, end = sorted(random.sample(range(n), 2))
     child = [-1] * n
@@ -158,14 +158,14 @@ def order_crossover(parent1, parent2):
             idx += 1
     
     if len(set(child)) != n or any(x < 1 or x > n for x in child):
-        raise ValueError(f"Invalid child generated: {child}")
+        raise ValueError(f"Invalid child generated: {len(child)}")
     return child
 
 def pmx_crossover(parent1, parent2):
     n = len(parent1)
     # Validate parents
     if len(parent2) != n or len(set(parent1)) != n or len(set(parent2)) != n:
-        raise ValueError(f"Invalid parents: parent1={parent1}, parent2={parent2}")
+        raise ValueError(f"Invalid parents: parent1={len(parent1)}, parent2={len(parent2)}")
     
     # Select crossover points and initialize child
     start, end = sorted(random.sample(range(n), 2))
@@ -196,13 +196,13 @@ def pmx_crossover(parent1, parent2):
     
     # Validate child
     if len(set(child)) != n or any(x < 1 or x > n for x in child):
-        raise ValueError(f"Invalid child generated: {child}")
+        raise ValueError(f"Invalid child generated: {len(child)}")
     return child
 
 def cycle_crossover(parent1, parent2):
     n = len(parent1)
     if len(parent2) != n or len(set(parent1)) != n or len(set(parent2)) != n:
-        raise ValueError(f"Invalid parents: parent1={parent1}, parent2={parent2}")
+        raise ValueError(f"Invalid parents: parent1={len(parent1)}, parent2={len(parent2)}")
     
     child = [-1] * n
     visited = [False] * n
@@ -228,7 +228,7 @@ def cycle_crossover(parent1, parent2):
 def cycle_crossover_two_child(parent1, parent2):
     n = len(parent1)
     if len(parent2) != n or len(set(parent1)) != n or len(set(parent2)) != n:
-        raise ValueError(f"Invalid parents: parent1={parent1}, parent2={parent2}")
+        raise ValueError(f"Invalid parents: parent1={len(parent1)}, parent2={len(parent2)}")
     
     # Child 1: Cycles from parent1, fill with parent2
     child1 = [-1] * n
@@ -264,9 +264,9 @@ def cycle_crossover_two_child(parent1, parent2):
     
     # Validate both children
     if len(set(child1)) != n or any(x < 1 or x > n for x in child1):
-        raise ValueError(f"Invalid child1 generated: {child1}")
+        raise ValueError(f"Invalid child1 generated: {len(child1)}")
     if len(set(child2)) != n or any(x < 1 or x > n for x in child2):
-        raise ValueError(f"Invalid child2 generated: {child2}")
+        raise ValueError(f"Invalid child2 generated: {len(child2)}")
     
     return child1, child2
 
@@ -274,7 +274,7 @@ def cycle_crossover_two_child(parent1, parent2):
 def pmx_crossover_two_child(parent1, parent2):
     n = len(parent1)
     if len(parent2) != n or len(set(parent1)) != n or len(set(parent2)) != n:
-        raise ValueError(f"Invalid parents: parent1={parent1}, parent2={parent2}")
+        raise ValueError(f"Invalid parents: parent1={len(parent1)}, parent2={len(parent2)}")
     
     start, end = sorted(random.sample(range(n), 2))
     
@@ -316,16 +316,16 @@ def pmx_crossover_two_child(parent1, parent2):
     
     # Validate both children
     if len(set(child1)) != n or any(x < 1 or x > n for x in child1):
-        raise ValueError(f"Invalid child1 generated: {child1}")
+        raise ValueError(f"Invalid child1 generated: {len(child1)}")
     if len(set(child2)) != n or any(x < 1 or x > n for x in child2):
-        raise ValueError(f"Invalid child2 generated: {child2}")
+        raise ValueError(f"Invalid child2 generated: {len(child2)}")
     
     return child1, child2
 
 def order_crossover_two_child(parent1, parent2):
     n = len(parent1)
     if len(parent2) != n or len(set(parent1)) != n or len(set(parent2)) != n:
-        raise ValueError(f"Invalid parents: parent1={parent1}, parent2={parent2}")
+        raise ValueError(f"Invalid parents: parent1={len(parent1)}, parent2={len(parent2)}")
     
     start, end = sorted(random.sample(range(n), 2))
     
@@ -359,62 +359,12 @@ def order_crossover_two_child(parent1, parent2):
     
     # Validate both children
     if len(set(child1)) != n or any(x < 1 or x > n for x in child1):
-        raise ValueError(f"Invalid child1 generated: {child1}")
+        raise ValueError(f"Invalid child1 generated: {len(child1)}")
     if len(set(child2)) != n or any(x < 1 or x > n for x in child2):
-        raise ValueError(f"Invalid child2 generated: {child2}")
+        raise ValueError(f"Invalid child2 generated: {len(child2)}")
     
     return child1, child2
 
-def pmx_crossover_two_child(parent1, parent2):
-    n = len(parent1)
-    if len(parent2) != n or len(set(parent1)) != n or len(set(parent2)) != n:
-        raise ValueError(f"Invalid parents: parent1={parent1}, parent2={parent2}")
-    
-    start, end = sorted(random.sample(range(n), 2))
-    
-    # Child 1: Segment from parent1, fill with parent2
-    child1 = [-1] * n
-    child1[start:end+1] = parent1[start:end+1]
-    used1 = set(child1[start:end+1])
-    mapping1 = {parent1[i]: parent2[i] for i in range(start, end+1)}
-    for i in range(n):
-        if i < start or i > end:
-            gene = parent2[i]
-            visited = set()
-            while gene in used1 and gene not in visited:
-                visited.add(gene)
-                gene = mapping1.get(gene, gene)
-            if gene in used1:
-                available = set(range(1, n+1)) - used1
-                gene = available.pop()
-            child1[i] = gene
-            used1.add(gene)
-    
-    # Child 2: Segment from parent2, fill with parent1
-    child2 = [-1] * n
-    child2[start:end+1] = parent2[start:end+1]
-    used2 = set(child2[start:end+1])
-    mapping2 = {parent2[i]: parent1[i] for i in range(start, end+1)}
-    for i in range(n):
-        if i < start or i > end:
-            gene = parent1[i]
-            visited = set()
-            while gene in used2 and gene not in visited:
-                visited.add(gene)
-                gene = mapping2.get(gene, gene)
-            if gene in used2:
-                available = set(range(1, n+1)) - used2
-                gene = available.pop()
-            child2[i] = gene
-            used2.add(gene)
-    
-    # Validate both children
-    if len(set(child1)) != n or any(x < 1 or x > n for x in child1):
-        raise ValueError(f"Invalid child1 generated: {child1}")
-    if len(set(child2)) != n or any(x < 1 or x > n for x in child2):
-        raise ValueError(f"Invalid child2 generated: {child2}")
-    
-    return child1, child2
 
 
 def mutate(chromosome, n, time_arrivals, times, cur_ep, total_ep, delta=20, mutation_rate=0.01, max_time=10):
@@ -462,7 +412,11 @@ def random_index_method(crossover_score):
 
 def select_random_instances(population):
     seleted = random.sample(population,k=1)
-    return seleted[0]
+    instance = seleted[0]
+    if len(instance) ==2:
+        return instance[0]
+    else:
+        return instance
 
 
 def get_top_k_elite(population, fitnesses, k):
@@ -513,7 +467,7 @@ def genetic_algorithm(n, time_arrivals, times, max_time, pop_size=170, reserve_p
                 parent1 = tournament_selection(population, fitnesses)
                 
                 if random.random() < p_reserve*(1 - ep/total_ep) and reserve_pop:
-                    parent2, _ = random.choice(reserve_pop)
+                    parent2 = select_random_instances(reserve_pop)
                 else:
                     parent2 = tournament_selection(population, fitnesses)
                 
@@ -535,7 +489,7 @@ def genetic_algorithm(n, time_arrivals, times, max_time, pop_size=170, reserve_p
 
 if __name__ == "__main__":
     try:
-        n, time_arrivals, times, max_time = read_input_from_file("tests/test7/input.in")
+        n, time_arrivals, times, max_time = read_input_from_file("tests/test8/input.in")
         start_time = time.time()
         best_route = genetic_algorithm(n, time_arrivals, times, max_time)
         end_time = time.time()
