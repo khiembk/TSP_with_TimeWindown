@@ -489,7 +489,7 @@ def genetic_algorithm(n, time_arrivals, times, max_time, pop_size=170, reserve_p
 
 if __name__ == "__main__":
     try:
-        n, time_arrivals, times, max_time = read_input_from_file("tests/test8/input.in")
+        n, time_arrivals, times, max_time = read_input_from_file("tests/test11/input.in")
         start_time = time.time()
         best_route = genetic_algorithm(n, time_arrivals, times, max_time)
         end_time = time.time()
