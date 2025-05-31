@@ -1,6 +1,51 @@
 import random
 from copy import deepcopy
 import time
+def read_input_from_file(filename):
+    try:
+        with open(filename, 'r') as file:
+            # Read n
+            line = file.readline().strip()
+            n = int(line)
+            if not 1 <= n <= 1000:
+                raise ValueError("N must be between 1 and 1000")
+            
+            time_arrivals = []
+            times = []
+            max_time = 0
+            
+            # Read time windows and service times
+            for _ in range(n):
+                line = file.readline().strip()
+                if not line:
+                    raise ValueError("Unexpected end of file while reading time windows")
+                e, l, d = map(int, line.split())
+                if e < 0 or l < e or d < 0:
+                    raise ValueError("Invalid time window or service time")
+                time_arrivals.append([e, l, d])
+                max_time = max(max_time, l)
+            
+            # Read travel time matrix
+            for _ in range(n+1):
+                line = file.readline().strip()
+                if not line:
+                    raise ValueError("Unexpected end of file while reading travel time matrix")
+                row = list(map(int, line.split()))
+                if len(row) != n+1 or any(t < 0 for t in row):
+                    raise ValueError("Invalid travel time matrix row")
+                times.append(row)
+            
+            # Check for extra data
+            if file.readline().strip():
+                raise ValueError("Extra data found after expected input")
+            
+            return n, time_arrivals, times, max_time
+    except FileNotFoundError:
+        raise ValueError(f"Input file not found: {filename}")
+    except ValueError as e:
+        raise ValueError(f"Input error: {str(e)}")
+    except Exception as e:
+        raise ValueError(f"Unexpected error reading file: {str(e)}")
 def read_input():
     try:
         n = int(input())
@@ -450,7 +495,7 @@ def genetic_algorithm(n, time_arrivals, times, max_time, pop_size=170, reserve_p
         min_fitness = min(fitnesses)
         if best_fitness != float('inf'):
             best_fitness = compute_fitness(n, time_arrivals, times, best_solution, ep, total_ep)
-            
+
         if min_fitness < best_fitness:
             if best_fitness!= float('inf'):
                 add_score = (best_fitness - min_fitness)/best_fitness
@@ -467,7 +512,7 @@ def genetic_algorithm(n, time_arrivals, times, max_time, pop_size=170, reserve_p
                 
                 parent1 = tournament_selection(population, fitnesses)
                 
-                if random.random() < p_reserve*(ep/total_ep) and reserve_pop:
+                if random.random() < p_reserve*(1 - ep/total_ep) and reserve_pop:
                     parent2, _ = random.choice(reserve_pop)
                 else:
                     parent2 = tournament_selection(population, fitnesses)
@@ -490,7 +535,7 @@ def genetic_algorithm(n, time_arrivals, times, max_time, pop_size=170, reserve_p
 
 if __name__ == "__main__":
     try:
-        n, time_arrivals, times, max_time = read_input()
+        n, time_arrivals, times, max_time = read_input_from_file("tests/test7/input.in")
         start_time = time.time()
         best_route = genetic_algorithm(n, time_arrivals, times, max_time)
         end_time = time.time()
