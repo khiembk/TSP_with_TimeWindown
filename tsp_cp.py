@@ -94,7 +94,7 @@ def solve_tsp_cp(n, time_windows, service_times, travel_times):
     model.Minimize(total_travel_time)
 
     solver = cp_model.CpSolver()
-    solver.parameters.max_time_in_seconds = 30.0
+    # solver.parameters.max_time_in_seconds = 30.0
 
     status = solver.Solve(model)
 
