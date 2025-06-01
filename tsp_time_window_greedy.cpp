@@ -17,7 +17,7 @@ int main()
 
     // Đọc thông tin khách hàng
     for (int i = 0; i < N; ++i) {
-	    std::cin >> customers[i].startTime >> customers[i].endTime >> customers[i].duration;
+        std::cin >> customers[i].startTime >> customers[i].endTime >> customers[i].duration;
         customers[i].index = i + 1;
     }
 
@@ -25,11 +25,12 @@ int main()
     vector<vector<int>> travelTimes(N + 1, vector<int>(N + 1));
     for (int i = 0; i <= N; ++i) {
         for (int j = 0; j <= N; ++j) {
-		std::cin >> travelTimes[i][j];
+            std::cin >> travelTimes[i][j];
         }
     }
 
     // Sắp xếp các khách hàng dựa trên thời gian bắt đầu giao hàng
+    // https://web.archive.org/web/20231004211702/https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.14.5196&rep=rep1&type=pdf
     std::sort(customers.begin(), customers.end(), [](const Customer& a, const Customer& b) {
         return a.startTime < b.startTime;
     });
@@ -43,7 +44,7 @@ int main()
     // In kết quả
     std::cout << N << "\n";
     for (const auto& point : deliveryRoute) {
-	    std::cout << point << " ";
+        std::cout << point << " ";
     }
 
     return 0;
