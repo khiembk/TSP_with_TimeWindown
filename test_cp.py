@@ -21,11 +21,20 @@ def run_test(test_dir):
         solve_tsp_cp(n, time_windows, service_times, travel_times)
         solve_time = time.time() - start_time
         output_lines = sys.stdout.getvalue().strip().split("\n")
-        actual = output_lines[-1] if output_lines else "NOT_FEASIBLE"
+
+        cost = "0"
+        actual = "NOT_FEASIBLE"
+        if output_lines:
+            for line in output_lines:
+                if line.startswith("Cost:"):
+                    cost = line.split("Cost:")[1].strip()
+                elif line.strip() and not line.startswith("Cost:"):
+                    actual = line.strip()
 
     results = []
     results.append(f"Status: {'FEASIBLE' if actual == expected else 'INFEASIBLE'}")
     results.append(f"Best sol: [{', '.join(map(str, actual.split()))}]")
+    results.append(f"Cost: {cost}")
     results.append(f"Solve Time: {solve_time:.2f} secs")
 
     with open(result_output, "w") as f:
@@ -36,7 +45,7 @@ def run_test(test_dir):
 
 
 def main():
-    for i in range(1, 4):
+    for i in range(7, 8):
         test_dir = f"tests/test{i}"
         run_test(test_dir)
 

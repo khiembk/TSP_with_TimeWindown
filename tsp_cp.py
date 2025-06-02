@@ -84,21 +84,23 @@ def solve_tsp_cp(n, time_windows, service_times, travel_times):
                 model.Add(u[i] - u[j] + n * x[i, j] <= n - 1)
 
     # Hàm mục tiêu: tối thiểu hóa tổng thời gian di chuyển
-    total_travel_time = sum(
+    total_cost = sum(
         x[i, j] * travel_times[i][j]
         for i in range(n + 1)
         for j in range(n + 1)
         if i != j
     )
 
-    model.Minimize(total_travel_time)
+    model.Minimize(total_cost)
 
     solver = cp_model.CpSolver()
-    # solver.parameters.max_time_in_seconds = 30.0
+    # solver.parameters.max_time_in_seconds = 240
+    # solver.parameters.num_search_workers = 10
 
     status = solver.Solve(model)
 
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
+        print("Cost: ", int(solver.Value(total_cost)))
         # Trích xuất lộ trình từ nghiệm
         route = []
         current = 0
