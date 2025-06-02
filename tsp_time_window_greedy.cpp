@@ -2,50 +2,90 @@
 #include <iostream>
 #include <vector>
 
+using std::pair;
 using std::vector;
-
-struct Customer {
-    int index, startTime, endTime, duration;
-};
 
 int main()
 {
-    int N;
-    std::cin >> N;
+    int n;
+    std::cin >> n;
 
-    vector<Customer> customers(N);
+    // time_windows[i] = {e_i, l_i} - cửa sổ thời gian của khách hàng i
+    vector<pair<int, int>> time_windows(n);
+    // service_times[i] = d_i - thời gian phục vụ khách hàng i
+    vector<int> service_times(n);
 
     // Đọc thông tin khách hàng
-    for (int i = 0; i < N; ++i) {
-        std::cin >> customers[i].startTime >> customers[i].endTime >> customers[i].duration;
-        customers[i].index = i + 1;
+    for (int i = 0; i < n; ++i) {
+        int e, l, d;
+        std::cin >> e >> l >> d;
+        time_windows[i] = { e, l };
+        service_times[i] = d;
     }
 
     // Đọc ma trận thời gian di chuyển
-    vector<vector<int>> travelTimes(N + 1, vector<int>(N + 1));
-    for (int i = 0; i <= N; ++i) {
-        for (int j = 0; j <= N; ++j) {
-            std::cin >> travelTimes[i][j];
+    vector<vector<int>> travel_times(n + 1, vector<int>(n + 1));
+    for (int i = 0; i <= n; ++i) {
+        for (int j = 0; j <= n; ++j) {
+            std::cin >> travel_times[i][j];
         }
     }
 
-    // Sắp xếp các khách hàng dựa trên thời gian bắt đầu giao hàng
+    // Tạo danh sách khách hàng với chỉ số
+    vector<int> customers;
+    for (int i = 0; i < n; ++i) {
+        customers.push_back(i + 1);
+    }
+
+    // Đây là thuật toán greedy: ưu tiên khách hàng có thời gian bắt đầu sớm nhất
     // https://web.archive.org/web/20231004211702/https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.14.5196&rep=rep1&type=pdf
-    std::sort(customers.begin(), customers.end(), [](const Customer& a, const Customer& b) {
-        return a.startTime < b.startTime;
+    std::sort(customers.begin(), customers.end(), [&](int a, int b) {
+        return time_windows[a - 1].first < time_windows[b - 1].first;
     });
 
-    // Lập lộ trình giao hàng
-    vector<int> deliveryRoute;
-    for (const auto& customer : customers) {
-        deliveryRoute.push_back(customer.index);
+    // Tính tổng chi phí di chuyển
+    int total_travel_time = 0;
+    int current_time = 0;
+    int current_location = 0;
+    int violations = 0;
+
+    for (int customer : customers) {
+        // Thời gian di chuyển
+        int travel_time = travel_times[current_location][customer];
+        total_travel_time += travel_time;
+
+        // Thời gian đến khách hàng
+        current_time += travel_time;
+
+        // Nếu đến sớm, đợi đến thời gian bắt đầu
+        if (current_time < time_windows[customer - 1].first) {
+            current_time = time_windows[customer - 1].first;
+        }
+
+        // Kiểm tra vi phạm: bắt đầu phục vụ sau latest time
+        if (current_time > time_windows[customer - 1].second) {
+            violations++;
+        }
+
+        // Thời gian phục vụ
+        current_time += service_times[customer - 1];
+
+        // Cập nhật vị trí hiện tại
+        current_location = customer;
     }
 
-    // In kết quả
-    std::cout << N << "\n";
-    for (const auto& point : deliveryRoute) {
-        std::cout << point << " ";
+    // Chi phí quay về kho
+    total_travel_time += travel_times[current_location][0];
+
+    std::cout << "Cost: " << total_travel_time << "\n";
+    std::cout << "Violations: " << violations << "\n";
+    std::cout << n << "\n";
+    for (int i = 0; i < n; ++i) {
+        std::cout << customers[i];
+        if (i < n - 1)
+            std::cout << " ";
     }
+    std::cout << "\n";
 
     return 0;
 }
