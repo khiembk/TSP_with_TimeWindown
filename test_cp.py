@@ -45,7 +45,7 @@ def run_test(test_dir):
 
 
 def main():
-    for i in range(7, 8):
+    for i in range(1, 12):
         test_dir = f"tests/test{i}"
         run_test(test_dir)
 

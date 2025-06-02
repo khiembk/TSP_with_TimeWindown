@@ -1,2 +1,4 @@
 __pycache__/
 ortools-env
+*.exe
+*.obj
